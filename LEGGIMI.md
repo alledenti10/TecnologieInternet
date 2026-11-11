@@ -7,6 +7,8 @@ OpenRouter fornisce l'accesso al modello AI configurato.
 ## Come orientarsi
 
 Leggi la [mappa del progetto](documentazione/MAPPA_PROGETTO.md).
+La spiegazione completa del funzionamento, della configurazione e degli imprevisti
+risolti è in [Funzionamento_progetto.txt](Funzionamento_progetto.txt).
 
 | Pagina | File | Indirizzo |
 | --- | --- | --- |

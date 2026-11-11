@@ -1,0 +1,18 @@
+{
+  "name": "Preventivi AI",
+  "short_name": "Preventivi AI",
+  "description": "Generazione e gestione di preventivi aziendali con intelligenza artificiale.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icona-sito.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,11 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
   <defs>
-    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#7c3aed"/>
-      <stop offset="1" stop-color="#d946ef"/>
+    <linearGradient id="background" x1="40" x2="472" y1="40" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0ea5e9"/>
+      <stop offset=".52" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#a855f7"/>
     </linearGradient>
+    <linearGradient id="paper" x1="150" x2="365" y1="106" y2="410" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff"/>
+      <stop offset="1" stop-color="#dbeafe"/>
+    </linearGradient>
+    <filter id="shadow" x="90" y="65" width="332" height="390" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#020617" flood-opacity=".35"/>
+    </filter>
   </defs>
-  <rect width="64" height="64" rx="16" fill="#020617"/>
-  <path fill="url(#g)" d="M16 18h32v8H16zm0 10h8v18h-8zm24 0h8v18h-8zM24 36h16v8H24z"/>
-  <circle cx="32" cy="22" r="4" fill="#fff"/>
+  <title id="title">Preventivi AI</title>
+  <desc id="description">Documento aziendale con grafico e segno di conferma</desc>
+  <rect width="512" height="512" rx="128" fill="#020617"/>
+  <rect x="28" y="28" width="456" height="456" rx="112" fill="url(#background)"/>
+  <circle cx="92" cy="100" r="76" fill="#fff" opacity=".1"/>
+  <circle cx="425" cy="426" r="110" fill="#020617" opacity=".12"/>
+  <g filter="url(#shadow)">
+    <path fill="url(#paper)" d="M150 91h151l74 74v255H150z"/>
+    <path fill="#bfdbfe" d="M301 91v74h74z"/>
+    <path fill="#64748b" d="M190 211h137v18H190zm0 43h98v18h-98zm0 43h137v18H190z" opacity=".75"/>
+    <path fill="#2563eb" d="M190 355h18v38h-18zm32-25h18v63h-18zm32 12h18v51h-18zm32-39h18v90h-18z"/>
+    <circle cx="365" cy="363" r="55" fill="#10b981"/>
+    <path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" d="m337 363 19 19 37-42"/>
+  </g>
 </svg>

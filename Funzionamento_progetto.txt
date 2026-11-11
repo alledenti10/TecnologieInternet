@@ -1,0 +1,243 @@
+FUNZIONAMENTO DEL PROGETTO - PREVENTIVI AI
+==========================================
+
+1. SCOPO DELL'APPLICAZIONE
+---------------------------
+
+Preventivi AI è un'applicazione Nuxt/Vue per creare preventivi aziendali a
+partire da una descrizione scritta dall'utente. L'intelligenza artificiale
+restituisce il preventivo in Markdown, che viene mostrato nell'interfaccia,
+salvato nello storico personale e convertito in PDF quando l'utente preme
+"Scarica PDF".
+
+L'applicazione è pubblicata su Vercel. Supabase gestisce autenticazione e
+sessione utente; PostgreSQL conserva i preventivi; OpenRouter (tramite
+un'API compatibile OpenAI) fornisce il modello AI.
+
+
+2. STRUTTURA PRINCIPALE
+-----------------------
+
+pages/
+  accesso.vue              Accesso e reinvio della conferma email
+  registrazione.vue        Creazione account
+  pagina-principale.vue    Form per generare il preventivo
+  storico-preventivi.vue   Elenco dei preventivi dell'utente
+  conferma-email.vue       Completamento della conferma Supabase
+  recupera-password.vue    Richiesta di recupero password
+  reimposta-password.vue   Impostazione della nuova password
+
+components/
+  SchedaAutenticazione.vue Scheda grafica condivisa dalle pagine auth
+  VisualizzatorePreventivo.vue
+                            Anteprima Markdown e pulsante di esportazione
+
+composables/
+  usePreventivo.ts         Stato e chiamata per generare un preventivo
+
+server/api/
+  genera-preventivo.post.ts
+                            Verifica l'utente, chiama l'AI e salva il risultato
+  esporta-pdf.post.ts       Converte Markdown in HTML e genera il PDF
+
+server/db/
+  connessione.ts           Connessione PostgreSQL/Drizzle
+  schema-database.ts       Schema delle tabelle usato dall'app
+
+server/lib/
+  intelligenza-artificiale.ts
+                            Chiamata al provider AI e controlli sulla risposta
+
+sql/
+  ricrea-tabelle-progetto.sql
+                            Schema e policy iniziali del database
+  elimina-tabelle-pubbliche.sql
+                            Script distruttivo, da usare solo consapevolmente
+
+public/
+  icona-sito.svg           Icona dell'app per browser e dispositivi mobili
+  manifest.webmanifest     Metadati per aggiungere l'app alla schermata Home
+
+
+3. FLUSSO DI GENERAZIONE
+-------------------------
+
+1. L'utente accede con Supabase e scrive la descrizione del lavoro.
+2. usePreventivo.ts invia la descrizione a POST /api/genera-preventivo.
+3. L'endpoint controlla la sessione tramite Supabase.
+4. Il server chiama il modello AI usando le variabili private.
+5. Il testo Markdown viene controllato, viene estratto il prezzo stimato e il
+   preventivo viene salvato con l'utente proprietario.
+6. La pagina mostra il Markdown con marked e DOMPurify lato browser.
+7. VisualizzatorePreventivo.vue invia il Markdown originale a
+   POST /api/esporta-pdf.
+8. L'endpoint converte il Markdown in HTML, applica lo stesso CSS PDF e usa
+   Chromium headless per restituire un allegato PDF.
+
+
+4. CONFIGURAZIONE ENV
+---------------------
+
+Il file .env contiene segreti e non deve essere committato. Il repository
+contiene solo .env.example come traccia. Su Vercel le stesse variabili vanno
+in Project Settings > Environment Variables.
+
+Variabili private:
+
+AI_API_KEY                 Chiave privata del provider AI.
+AI_BASE_URL                URL API, normalmente OpenRouter.
+AI_MODEL                   Modello da usare.
+AI_MAX_OUTPUT_TOKENS       Limite della risposta AI.
+DATABASE_URL               Connessione PostgreSQL usata da Drizzle.
+SUPABASE_SERVICE_ROLE_KEY  Chiave amministrativa, mai da esporre al browser.
+
+Variabili pubbliche:
+
+NUXT_PUBLIC_SUPABASE_URL       URL del progetto Supabase.
+NUXT_PUBLIC_SUPABASE_ANON_KEY  Chiave anonima, utilizzabile dal client.
+
+Le variabili NUXT_PUBLIC_* sono visibili al browser e non devono contenere
+segreti. Il file .env condiviso durante il lavoro non è stato copiato in questo
+documento e nessun valore reale è incluso nel repository.
+
+
+5. SUPABASE E AUTENTICAZIONE
+----------------------------
+
+Supabase gestisce:
+
+- registrazione e accesso con email/password;
+- conferma dell'indirizzo email;
+- recupero e reimpostazione della password;
+- sessione dell'utente;
+- policy che limitano la lettura dei preventivi al proprietario.
+
+In Supabase Authentication > URL Configuration bisogna autorizzare il dominio
+Vercel e gli indirizzi usati dai link email. In sviluppo vanno autorizzati
+anche gli URL localhost, per esempio:
+
+  http://localhost:3000/confirm
+  http://localhost:3000/reset-password
+
+Gli alias esistenti conservano la compatibilità con i vecchi link:
+/login, /register, /confirm, /forgot-password, /reset-password.
+
+Il file sql/ricrea-tabelle-progetto.sql serve per una nuova installazione.
+Non va rilanciato alla cieca su un database già popolato. Lo script
+elimina-tabelle-pubbliche.sql è distruttivo e non serve per il normale avvio.
+
+
+6. FRAMMENTI DI CODICE IMPORTANTI
+---------------------------------
+
+Configurazione Supabase e runtime server in nuxt.config.ts:
+
+  supabase: {
+    url: process.env.NUXT_PUBLIC_SUPABASE_URL,
+    key: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY
+  },
+  runtimeConfig: {
+    aiApiKey: process.env.AI_API_KEY || '',
+    databaseUrl: process.env.DATABASE_URL,
+    public: {
+      supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL,
+      supabaseKey: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY
+    }
+  }
+
+Chiamata per generare il preventivo in composables/usePreventivo.ts:
+
+  const res = await $fetch('/api/genera-preventivo', {
+    method: 'POST',
+    body: { description: description.value }
+  })
+  markdown.value = res.markdown
+
+Controllo dell'utente e salvataggio nel server:
+
+  const user = await serverSupabaseUser(event)
+  if (!user) {
+    throw createError({ statusCode: 401, statusMessage: 'Non autenticato' })
+  }
+
+  const markdown = await generateEstimateMarkdown(description, config)
+  await db.insert(preventivi).values({
+    userId: user.sub,
+    markdown
+  })
+
+Conversione Markdown senza alterare la sintassi:
+
+  const renderer = new Renderer()
+  renderer.html = () => ''
+  const htmlContent = marked.parse(markdown, { renderer })
+
+Il renderer lascia a marked titoli, paragrafi, elenchi e tabelle Markdown. La
+funzione html disabilita soltanto HTML raw, evitando che un tag script o altro
+markup arbitrario venga inserito nel documento PDF.
+
+Avvio Chromium su Vercel:
+
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless
+  })
+
+Il codice usa il browser Puppeteer locale solo su Windows; sulle funzioni
+serverless Linux di Vercel usa @sparticuz/chromium e puppeteer-core.
+
+
+7. IMPREVISTI RISOLTI
+---------------------
+
+Repository e struttura:
+
+- Il progetto iniziale era dentro una cartella contenitore con un repository
+  Git annidato. È stato reso autonomo il repository della cartella
+  PreventiviAziendaliGeneratiConAi, così i file dell'app sono alla radice di
+  GitHub e Vercel trova subito package.json.
+- I file .env e le credenziali non sono stati committati. È stato mantenuto
+  .env.example come modello senza valori segreti.
+
+Vercel e Nuxt:
+
+- Vercel cercava una cartella statica dist, ma Nuxt produceva un server Nitro.
+  Il preset è stato cambiato da node-server a vercel, che genera
+  .vercel/output e mantiene attive anche le API server.
+- La build usava Chromium bundled da Puppeteer, non disponibile in modo
+  affidabile nelle funzioni Vercel. È stato aggiunto @sparticuz/chromium per
+  Linux/Vercel e un fallback Puppeteer per Windows.
+- Il primo sanitizer server usava jsdom/parse5, poi un secondo sanitizer
+  usava htmlparser2: entrambi causavano ERR_REQUIRE_ESM nel bundle Node 22 di
+  Vercel. La soluzione finale usa il renderer nativo di marked e non cambia lo
+  stile Markdown.
+
+Configurazione:
+
+- Supabase richiede URL e chiavi coerenti tra locale, Vercel e Authentication
+  URL Configuration. Le chiavi private restano server-side.
+- Le email di conferma e reset dipendono dal provider email/SMTP configurato
+  in Supabase; per questo i link devono essere autorizzati nel progetto.
+- Le cifre generate dall'AI sono stime: non sostituiscono una verifica
+  commerciale e tecnica prima dell'invio al cliente.
+
+
+8. COMANDI UTILI
+----------------
+
+  npm ci
+  npm run dev
+  npm run build
+  npm run start
+
+Per una nuova installazione:
+
+1. Copiare .env.example in .env.
+2. Inserire localmente i valori corretti.
+3. Configurare le stesse variabili in Vercel.
+4. Configurare URL, provider email e template Supabase.
+5. Eseguire npm ci e npm run build.
+
+Non aggiungere mai .env, token, service role key o API key al commit.
