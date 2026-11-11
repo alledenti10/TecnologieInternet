@@ -1,5 +1,6 @@
 import { defineEventHandler, readBody, setHeader, createError } from 'h3'
-import puppeteer from 'puppeteer'
+import chromium from '@sparticuz/chromium'
+import puppeteer from 'puppeteer-core'
 import { marked } from 'marked'
 import DOMPurify from 'isomorphic-dompurify'
 import { join, dirname } from 'path'
@@ -51,53 +52,55 @@ export default defineEventHandler(async (event) => {
     `
   }
 
-  // 🧠 Avvia Puppeteer (Chrome headless)
-  // --no-sandbox evita problemi di avvio del browser in alcuni ambienti locali.
-  const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  })
-  const page = await browser.newPage()
+  // 🧠 Avvia Chromium ottimizzato per le funzioni serverless di Vercel.
+  const browser = process.platform === 'win32'
+    ? await (await import('puppeteer')).default.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      })
+    : await puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless
+      })
 
-  // 🖨️ Inserisce nel browser un HTML completo con:
-  //  - CSS Tailwind (se trovato)
-  //  - CSS fallback (se non trovato)
-  //  - contenuto in markdown convertito in HTML
-  await page.setContent(
-    `
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <style>${css}</style>
-      </head>
-      <body class="bg-white">
-        <!--
-          .prose e .prose-slate funzionano solo se Tailwind PDF CSS è presente.
-          Se non lo è, verrà comunque renderizzato pulito e leggibile.
-        -->
-        <main class="prose prose-slate max-w-none">${htmlContent}</main>
-      </body>
-    </html>
-    `,
-    { waitUntil: 'networkidle0' } // ⏳ Aspetta che la pagina sia completamente caricata
-  )
+  try {
+    const page = await browser.newPage()
 
-  // 🧾 Genera il PDF in formato A4 includendo grafica e background CSS
-  const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true })
+    // 🖨️ Inserisce nel browser l'HTML generato dal Markdown con il CSS esistente.
+    await page.setContent(
+      `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>${css}</style>
+        </head>
+        <body class="bg-white">
+          <main class="prose prose-slate max-w-none">${htmlContent}</main>
+        </body>
+      </html>
+      `,
+      { waitUntil: 'networkidle0' }
+    )
 
-  await browser.close()
+    // 🧾 Genera il PDF in formato A4 includendo grafica e background CSS.
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true })
 
-  // 🛠️ Conversione Buffer → ArrayBuffer, richiesta da Response()
-  setHeader(event, 'Cache-Control', 'no-store')
+    // 🛠️ Conversione Buffer → ArrayBuffer, richiesta da Response()
+    setHeader(event, 'Cache-Control', 'no-store')
 
-  const arrayBuffer = pdfBuffer instanceof Buffer
-    ? pdfBuffer.buffer.slice(pdfBuffer.byteOffset, pdfBuffer.byteOffset + pdfBuffer.byteLength)
-    : pdfBuffer
+    const arrayBuffer = pdfBuffer instanceof Buffer
+      ? pdfBuffer.buffer.slice(pdfBuffer.byteOffset, pdfBuffer.byteOffset + pdfBuffer.byteLength)
+      : pdfBuffer
 
-  // 📦 Restituisce direttamente il PDF come allegato scaricabile
-  return new Response(arrayBuffer, {
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="preventivo.pdf"',
-    },
-  })
+    // 📦 Restituisce direttamente il PDF come allegato scaricabile.
+    return new Response(arrayBuffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'attachment; filename="preventivo.pdf"',
+      },
+    })
+  } finally {
+    await browser.close()
+  }
 })
