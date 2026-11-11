@@ -1,8 +1,7 @@
 import { defineEventHandler, readBody, setHeader, createError } from 'h3'
 import chromium from '@sparticuz/chromium'
 import puppeteer from 'puppeteer-core'
-import { marked } from 'marked'
-import sanitizeHtml from 'sanitize-html'
+import { marked, Renderer } from 'marked'
 import { join, dirname } from 'path'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
@@ -18,7 +17,9 @@ export default defineEventHandler(async (event) => {
   }
 
   // 🔐 Sanitize HTML generato da markdown (contro XSS)
-  const htmlContent = sanitizeHtml(marked.parse(markdown))
+  const renderer = new Renderer()
+  renderer.html = () => ''
+  const htmlContent = marked.parse(markdown, { renderer })
 
   // 📄 Percorsi possibili al file CSS già compilato (Tailwind PDF build)
   // Nitro/Node hanno strutture imprevedibili → servono fallback multipli
