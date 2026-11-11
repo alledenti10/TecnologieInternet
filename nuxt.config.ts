@@ -64,7 +64,7 @@ export default defineNuxtConfig({
 
   // 🚀 Configurazione Nitro (server Nuxt)
   nitro: {
-    preset: 'node-server',
+    preset: 'vercel',
     // Traccia i pacchetti che combinano ESM e require (nft issue #543).
     externals: {
       traceOptions: { mixedModules: true }
