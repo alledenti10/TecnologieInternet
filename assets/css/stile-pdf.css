@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Print page setup */
+@page {
+  margin: 2cm;
+}
+
+@layer base {
+  body {
+    @apply font-sans text-slate-800 bg-white text-[13px] leading-6;
+  }
+}
+
+/* Components for PDF */
+@layer components {
+  /* Optional price box utility built with Tailwind */
+  .price-box {
+    @apply border-2 border-cyan-500 rounded-lg px-4 py-3 bg-cyan-50 mt-6 text-center text-base font-bold text-cyan-700;
+  }
+
+  .section {
+    @apply mb-6;
+  }
+}
+
+@layer utilities {
+  .print-avoid-break {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}

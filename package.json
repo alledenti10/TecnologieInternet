@@ -1,0 +1,44 @@
+{
+  "name": "preventivi-generati-con-ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "predev": "npm run build:pdf:css",
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "build:pdf:css": "tailwindcss -i assets/css/stile-pdf.css -o assets/css/stile-pdf-compilato.css --minify",
+    "prebuild": "npm run build:pdf:css",
+    "dev:watch:pdf": "tailwindcss -i assets/css/stile-pdf.css -o assets/css/stile-pdf-compilato.css --watch --minify",
+    "dev:all": "npm run build:pdf:css && nuxt dev",
+    "start": "nuxt start"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^1.0.58",
+    "@nuxtjs/supabase": "^2.0.1",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "latest",
+    "ai": "^5.0.95",
+    "dompurify": "latest",
+    "drizzle-orm": "^0.44.7",
+    "isomorphic-dompurify": "^2.32.0",
+    "marked": "^17.0.0",
+    "nuxt": "latest",
+    "pg": "latest",
+    "puppeteer": "^24.30.0",
+    "vue": "latest"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.12.0",
+    "@tailwindcss/typography": "^0.5.15",
+    "@types/node": "latest",
+    "@types/pg": "^8.15.6",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "typescript": "latest"
+  }
+}
