@@ -25,11 +25,11 @@
     "ai": "^5.0.95",
     "dompurify": "latest",
     "drizzle-orm": "^0.44.7",
-    "isomorphic-dompurify": "^2.32.0",
     "marked": "^17.0.0",
     "nuxt": "latest",
     "pg": "latest",
     "puppeteer-core": "^25.17.0",
+    "sanitize-html": "^2.18.1",
     "vue": "latest"
   },
   "devDependencies": {
@@ -37,6 +37,7 @@
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "latest",
     "@types/pg": "^8.15.6",
+    "@types/sanitize-html": "^2.16.2",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "puppeteer": "^25.17.0",
